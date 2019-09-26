@@ -4,49 +4,50 @@
 #include <Windows.h>
 #include <string.h>
 #include <io.h>
-#include "Disp.h"/*µğ½ºÇÃ·¹ÀÌ ÇÔ¼öÁ¤ÀÇ*/
-#include "ATM_type.c"/*»ç¿ëµÉ µ¥ÀÌÅÍÇü½Ä Á¤ÀÇ*/
+#include "Disp.h"/*ë””ìŠ¤í”Œë ˆì´ í•¨ìˆ˜ì •ì˜*/
+#include "ATM_type.c"/*ì‚¬ìš©ë  ë°ì´í„°í˜•ì‹ ì •ì˜*/
 
-#define NOERR 0 /*¿¡·¯ ¾øÀ½*/
-#define NOACCOUNT 1 /*°èÁÂ ¾øÀ½*/
-#define PWERR 2/*ºñ¹Ğ¹øÈ£ Æ²¸²*/
-#define BALANCE_ERR 3 /*ÀÜ¾×ºÎÁ·*/
-#define CANCEL 4 /*Ãë¼Ò*/
+#define NOERR 0 /*ì—ëŸ¬ ì—†ìŒ*/
+#define NOACCOUNT 1 /*ê³„ì¢Œ ì—†ìŒ*/
+#define PWERR 2/*ë¹„ë°€ë²ˆí˜¸ í‹€ë¦¼*/
+#define BALANCE_ERR 3 /*ì”ì•¡ë¶€ì¡±*/
+#define CANCEL 4 /*ì·¨ì†Œ*/
 
 #define GABANK "01"
 #define	KWBANK "02"
-////°èÁÂ¹øÈ£°¡ °èÁÂ ÆÄÀÏ ÀÌ¸§ 
-////ÆÄÀÏ ±¸¼º : °èÁÂ¹øÈ£.txt <°èÁÂ¹øÈ£ºñ¹ø ÀÌ¸§ ÀÜ¾×>
+////ê³„ì¢Œë²ˆí˜¸ê°€ ê³„ì¢Œ íŒŒì¼ ì´ë¦„ 
+////íŒŒì¼ êµ¬ì„± : ê³„ì¢Œë²ˆí˜¸.txt <ê³„ì¢Œë²ˆí˜¸ë¹„ë²ˆ ì´ë¦„ ì”ì•¡>
+typedef BANK char;
+ID USER;//ì‚¬ìš©ì ê³„ì¢Œ ë²ˆí˜¸, ë¹„ë°€ë²ˆí˜¸ ì…ë ¥ìš© ë³€ìˆ˜
+member MEMBER;//ê³„ì¢Œ ì •ë³´ ë³€ìˆ˜
 
-ID USER;//»ç¿ëÀÚ °èÁÂ ¹øÈ£, ºñ¹Ğ¹øÈ£ ÀÔ·Â¿ë º¯¼ö
-member MEMBER;//°èÁÂ Á¤º¸ º¯¼ö
+int ckID_num(unsigned short id_num, BANK* bank);//ì—†ì€ idë©´ 1ì„ ë¦¬í„´
+int CK_ID(ID id, member* ret, BANK bank);//ì„±ê³µ 0, ê³„ì¢Œ ì—†ìŒ 1, ë¹„ë²ˆì˜¤ë¥˜ 2
+int deposit(member* user, unsigned long long money);//ì„±ê³µì‹œ 0 
+int withdraw(member* user, unsigned long long money);//ì„±ê³µì‹œ 0, ì”ì•¡ë¶€ì¡± 3
+int transfer(member* user, unsigned short dest_id_num, unsigned long long money);//ì„±ê³µì‹œ 0, ì”ì•¡ ë¶€ì¡± 3
+int writeData(member user);//ì„±ê³µì‹œ 0
+int userSet(ID* id, member* user, BANK* bank);//ì„±ê³µì‹œ 0
+int bankck(BANK* bank);
 
-int ckID_num(unsigned short id_num, char* bank);//¾øÀº id¸é 1À» ¸®ÅÏ
-int CK_ID(ID id, member* ret);//¼º°ø 0, °èÁÂ ¾øÀ½ 1, ºñ¹ø¿À·ù 2
-int deposit(member* user, unsigned long long money);//¼º°ø½Ã 0 
-int withdraw(member* user, unsigned long long money);//¼º°ø½Ã 0, ÀÜ¾×ºÎÁ· 3
-int transfer(member* user, unsigned short dest_id_num, unsigned long long money);//¼º°ø½Ã 0, ÀÜ¾× ºÎÁ· 3
-int writeData(member user);//¼º°ø½Ã 0
-int userSet(ID* id, member* user);//¼º°ø½Ã 0
-
-void no_err(void);//¿¡·¯ ¾øÀ½
-void cancel(void);//Ãë¼ÒµÊ
-void non_account(void);//°èÁÂ°¡ Á¸ÀçÇÏÁö ¾ÊÀ½
-void wrong_pw(void);//Àß¸øµÈ ºñ¹Ğ¹øÈ£
-void insufficient_balance(void);//ÀÜ¾× ºÎÁ·
+void no_err(void);//ì—ëŸ¬ ì—†ìŒ
+void cancel(void);//ì·¨ì†Œë¨
+void non_account(void);//ê³„ì¢Œê°€ ì¡´ì¬í•˜ì§€ ì•ŠìŒ
+void wrong_pw(void);//ì˜ëª»ëœ ë¹„ë°€ë²ˆí˜¸
+void insufficient_balance(void);//ì”ì•¡ ë¶€ì¡±
 
 void(*errFunc[5])(void) = { no_err ,non_account,wrong_pw,insufficient_balance, cancel };
-//¿¡·¯ Ã³¸®ÇÔ¼öÆ÷ÀÎÅÍ ¹è¿­
+//ì—ëŸ¬ ì²˜ë¦¬í•¨ìˆ˜í¬ì¸í„° ë°°ì—´
 
 #if 1
-int MK_ID(ID id, member* ret) {
+int MK_ID(ID id, member* ret, BANK bank) {
 	char path[20] = { 0 };
-	if (ckID_num(id.id.id_num) == 0)return CANCEL; //°èÁÂ Á¸Àç
+	if (ckID_num(id.id.id_num) == 0)return CANCEL; //ê³„ì¢Œ ì¡´ì¬
 
 	_ultoa(id.id.id_num, path, 10);
 	strcat(path, ".txt");
 	ret->id.Serial_No = id.Serial_No;
-	printf("ÀÌ¸§Àº? \n");
+	printf("ì´ë¦„ì€? \n");
 	scanf("%s", ret->name);
 	ret->balance = (unsigned long long)0;
 	FILE *fp;
@@ -63,126 +64,131 @@ void main(void) {
 	int errcode = 0;
 	unsigned short id_num = 0;
 	unsigned long long money = 0;
+        BANK tmpbank;
 	for (;;) {
 		Disp_main();
 		switch (_getch())
 		{
-		case '1':/*ÀÔ±İ*/
-			printf("\nÀÔ±İ\n");
-			errcode = userSet(&USER, &MEMBER);//»ç¿ëÀÚ Á¤º¸ÀÔ·Â
+		case '1':/*ì…ê¸ˆ*/
+			printf("\nì…ê¸ˆ\n");
+			errcode = userSet(&USER, &MEMBER,&bank);//ì‚¬ìš©ì ì •ë³´ì…ë ¥
 			if (errcode) {
 				errFunc[errcode]();
 				errcode = 0;
 				break;
 			}
-			if (Disp_money_input(&money))//±İ¾×ÀÔ·Â
+			if (Disp_money_input(&money))//ê¸ˆì•¡ì…ë ¥
 			{
 				errFunc[CANCEL]();
 				break;
 			}
-			deposit(&MEMBER, money);//ÀÔ±İ
-			writeData(MEMBER);//ÀúÀå
+			deposit(&MEMBER, money);//ì…ê¸ˆ
+			writeData(MEMBER);//ì €ì¥
 
-			errcode = CK_ID(USER, &MEMBER);//Á¤º¸ ºÒ·¯¿À±â
+			errcode = CK_ID(USER, &MEMBER,&bank);//ì •ë³´ ë¶ˆëŸ¬ì˜¤ê¸°
 			if (errcode) {
 				errFunc[errcode]();
 				errcode = 0;
 				break;
 			}
-			Disp_LookUp(MEMBER);//Á¤º¸ Ãâ·Â
+			Disp_LookUp(MEMBER);//ì •ë³´ ì¶œë ¥
 			break;
-		case '2':/*Ãâ±İ*/
-			printf("\nÃâ±İ\n");
-			errcode = userSet(&USER, &MEMBER);//»ç¿ëÀÚ Á¤º¸ÀÔ·Â
+		case '2':/*ì¶œê¸ˆ*/
+			printf("\nì¶œê¸ˆ\n");
+			errcode = userSet(&USER, &MEMBER, &bank);//ì‚¬ìš©ì ì •ë³´ì…ë ¥
 			if (errcode) {
 				errFunc[errcode]();
 				errcode = 0;
 				break;
 			}
-			if (Disp_money_input(&money))//±İ¾× ÀÔ·Â
+			if (Disp_money_input(&money))//ê¸ˆì•¡ ì…ë ¥
 			{
 				errFunc[CANCEL]();
 				break;
 			}
-			errcode = withdraw(&MEMBER, money);//Ãâ±İ
+			errcode = withdraw(&MEMBER, money);//ì¶œê¸ˆ
 			if (errcode) {
 				errFunc[errcode]();
 				errcode = 0;
 				break;
 			}
-			writeData(MEMBER);//ÀúÀå
+			writeData(MEMBER);//ì €ì¥
 
-			errcode = CK_ID(USER, &MEMBER);//Á¤º¸ºÒ·¯¿À±â
+			errcode = CK_ID(USER, &MEMBER,bank);//ì •ë³´ë¶ˆëŸ¬ì˜¤ê¸°
 			if (errcode) {
 				errFunc[errcode]();
 				errcode = 0;
 				break;
 			}
-			Disp_LookUp(MEMBER);//Á¤º¸Ãâ·Â
+			Disp_LookUp(MEMBER);//ì •ë³´ì¶œë ¥
 			break;
-		case '3':/*°èÁÂ ÀÌÃ¼*/
-			printf("\n°èÁÂ ÀÌÃ¼\n");
-			errcode = userSet(&USER, &MEMBER);//»ç¿ëÀÚ Á¤º¸ÀÔ·Â
+		case '3':/*ê³„ì¢Œ ì´ì²´*/
+			printf("\nê³„ì¢Œ ì´ì²´\n");
+			errcode = userSet(&USER, &MEMBER, &bank);//ì‚¬ìš©ì ì •ë³´ì…ë ¥
 			if (errcode) {
 				errFunc[errcode]();
 				errcode = 0;
 				break;
 			}
-
-			if (Disp_ID_input(&tmp))//¹Ş´Â »ç¶÷ °èÁÂ ÀÔ·Â
+                        if (Disp_Bank_input(&tmpbank))//ë°›ëŠ” ì‚¬ëŒ ì€í–‰ ì…ë ¥
 			{
 				errFunc[CANCEL]();
 				break;
 			}
-			errcode = ckID_num(tmp.id.id_num);//¹Ş´Â »ç¶÷ °èÁÂÁ¸ÀçÈ®ÀÎ
+			if (Disp_ID_input(&tmp))//ë°›ëŠ” ì‚¬ëŒ ê³„ì¢Œ ì…ë ¥
+			{
+				errFunc[CANCEL]();
+				break;
+			}
+			errcode = ckID_num(tmp.id.id_num, tmpbank);//ë°›ëŠ” ì‚¬ëŒ ê³„ì¢Œì¡´ì¬í™•ì¸
 			if (errcode) {
 				errFunc[errcode]();
 				errcode = 0;
 				break;
 			}
-			if (Disp_name_ck(tmp.id.id_num))//¹Ş´Â »ç¶÷ÀÇ ÀÌ¸§ È®ÀÎ
+			if (Disp_name_ck(tmp.id.id_num))//ë°›ëŠ” ì‚¬ëŒì˜ ì´ë¦„ í™•ì¸
 			{
 				errFunc[CANCEL]();
 				break;
 			}
-			Disp_LookUp(MEMBER);//»ç¿ëÀÚ ÀÜ°í Ãâ·Â
-			errcode = Disp_money_input(&money);//ÀÌÃ¼±İ¾× ÀÔ·Â 
+			Disp_LookUp(MEMBER);//ì‚¬ìš©ì ì”ê³  ì¶œë ¥
+			errcode = Disp_money_input(&money);//ì´ì²´ê¸ˆì•¡ ì…ë ¥ 
 			if (errcode)
 			{
 				errFunc[errcode]();
 				errcode = 0;
 				break;
 			}
-			if (Disp_Transfer_ck(MEMBER, tmp.id.id_num, money))//ÀÌÃ¼¿©ºÎ È®ÀÎ
+			if (Disp_Transfer_ck(MEMBER, tmp.id.id_num, money))//ì´ì²´ì—¬ë¶€ í™•ì¸
 			{
 				errFunc[CANCEL]();
 				break;
 			}
-			errcode = transfer(&MEMBER, tmp.id.id_num, money);//ÀÌÃ¼
+			errcode = transfer(&MEMBER, tmp.id.id_num, money,tmpbank);//ì´ì²´
 			if (errcode) {
 				errFunc[errcode]();
 				errcode = 0;
 				break;
 			}
-			writeData(MEMBER);//ÀúÀå
+			writeData(MEMBER);//ì €ì¥
 
-			errcode = CK_ID(USER, &MEMBER);//Á¤º¸ ºÒ·¯¿À±â
+			errcode = CK_ID(USER, &MEMBER);//ì •ë³´ ë¶ˆëŸ¬ì˜¤ê¸°
 			if (errcode) {
 				errFunc[errcode]();
 				errcode = 0;
 				break;
 			}
-			Disp_LookUp(MEMBER);//Á¤º¸Ãâ·Â
+			Disp_LookUp(MEMBER);//ì •ë³´ì¶œë ¥
 			break;
-		case '4':/*Á¶È¸*/
-			printf("\nÁ¶È¸\n");
-			errcode = userSet(&USER, &MEMBER);//»ç¿ëÀÚ Á¤º¸ÀÔ·Â
+		case '4':/*ì¡°íšŒ*/
+			printf("\nì¡°íšŒ\n");
+			errcode = userSet(&USER, &MEMBER,&bank);//ì‚¬ìš©ì ì •ë³´ì…ë ¥
 			if (errcode) {
 				errFunc[errcode]();
 				errcode = 0;
 				break;
 			}
-			Disp_LookUp(MEMBER);//Á¤º¸ Ãâ·Â
+			Disp_LookUp(MEMBER);//ì •ë³´ ì¶œë ¥
 			break;
 #if 1
 		case '5':
@@ -196,7 +202,7 @@ void main(void) {
 				errFunc[CANCEL]();
 				break;
 			}
-			MK_ID(USER, &MEMBER);
+			MK_ID(USER, &MEMBER,bank);
 			break;
 #endif
 		default:
@@ -208,120 +214,129 @@ void main(void) {
 	}
 	return;
 }
-int userSet(ID* id, member* user) {
-	if (Disp_ID_input(id))//°èÁÂ ÀÔ·Â
+int userSet(ID* id, member* user,BANK* bank) {
+	if (Disp_ID_input(id))//ê³„ì¢Œ ì…ë ¥
 	{
 		return CANCEL;
 	}
-	if (Disp_PW_input(id))//ºñ¹Ğ¹øÈ£ ÀÔ·Â
+	if (Disp_PW_input(id))//ë¹„ë°€ë²ˆí˜¸ ì…ë ¥
 	{
 		return CANCEL;
 	}
-	return CK_ID(*id, user);//ºñ¹Ğ¹øÈ£ È®ÀÎ
+        if (Disp_Bank_input(bank))//ê³„ì¢Œ ì…ë ¥
+	{
+		return CANCEL;
+	}
+	return CK_ID(*id, user,*bank);//ë¹„ë°€ë²ˆí˜¸ í™•ì¸
 
 }
-int ckID_num(unsigned short id_num, char* bank) {
-	char fullpath[40] = { 0 };//°èÁÂ °æ·Î
-	char id[20] = { 0 };//°èÁÂ
-	_ultoa(id_num, id, 10);//ÆÄÀÏÀÌ¸§ Ãß°¡ 
-	strcat(fullpath, (const char*)bank);
+int ckID_num(unsigned short id_num, BANK bank) {
+	char fullpath[40] = { 0 };//ê³„ì¢Œ ê²½ë¡œ
+	char id[20] = { 0 };//ê³„ì¢Œ
+	_ultoa(id_num, id, 10);//íŒŒì¼ì´ë¦„ ì¶”ê°€ 
+	strcat(fullpath, (const char)bank);
 	strcat(fullpath, "/");
 	strcat(fullpath, (const char*)id);
 	strcat(fullpath, ".txt");
 	int flag = _access(fullpath, 0);
-	if (flag)return NOACCOUNT;//Á¸Àç¾ÈÇÔ
-	else return NOERR;//Á¸Àç
+	if (flag)return NOACCOUNT;//ì¡´ì¬ì•ˆí•¨
+	else return NOERR;//ì¡´ì¬
 }
-int CK_ID(ID id, member* ret) {
-	char path[20] = { 0 };//°èÁÂ °æ·Î
+int CK_ID(ID id, member* ret,BANK bank) {
+	char path[20] = { 0 };//ê³„ì¢Œ ê²½ë¡œ
 	ID curr;
-	if (ckID_num(id.id.id_num, GABANK) == NOACCOUNT)return NOACCOUNT; //°èÁÂ Á¸Àç ¿©ºÎ È®ÀÎ
+	if (ckID_num(id.id.id_num, bank) == NOACCOUNT)return NOACCOUNT; //ê³„ì¢Œ ì¡´ì¬ ì—¬ë¶€ í™•ì¸
+        strcat(path, (const char)bank);
+	strcat(path, "/");
+	_ultoa(id.id.id_num, path, 10);//íŒŒì¼ì´ë¦„ ì¶”ê°€ 
+	strcat(path, ".txt");//í™•ì¥ì ì¶”ê°€
+	FILE *fp;//í¬ì¸í„° ì„ ì–¸
+	fp = fopen((const char*)path, "r");//íŒŒì¼ ì½ê¸°
+	fscanf(fp, "%lu", &curr.Serial_No);//ì‹œë¦¬ì–¼ ë„˜ë²„ ë°›ì•„ì˜¤ê¸°
 
-	_ultoa(id.id.id_num, path, 10);//ÆÄÀÏÀÌ¸§ Ãß°¡ 
-	strcat(path, ".txt");//È®ÀåÀÚ Ãß°¡
-	FILE *fp;//Æ÷ÀÎÅÍ ¼±¾ğ
-	fp = fopen((const char*)path, "r");//ÆÄÀÏ ÀĞ±â
-	fscanf(fp, "%lu", &curr.Serial_No);//½Ã¸®¾ó ³Ñ¹ö ¹Ş¾Æ¿À±â
+	if (id.Serial_No ^ curr.Serial_No)return PWERR;// ë² íƒ€ì  ë…¼ë¦¬í•©ìœ¼ë¡œ ë¹„ë²ˆí™•ì¸
 
-	if (id.Serial_No ^ curr.Serial_No)return PWERR;// º£Å¸Àû ³í¸®ÇÕÀ¸·Î ºñ¹øÈ®ÀÎ
-
-	fseek(fp, 0, SEEK_SET);//ÀĞ´Â À§Ä¡ ¼öÁ¤
-	fscanf(fp, "%lu %s %llu", &(ret->id.Serial_No), ret->name, &(ret->balance));//°èÁÂ Á¤º¸ º¹»ç
+	fseek(fp, 0, SEEK_SET);//ì½ëŠ” ìœ„ì¹˜ ìˆ˜ì •
+	fscanf(fp, "%lu %s %llu", &(ret->id.Serial_No), ret->name, &(ret->balance));//ê³„ì¢Œ ì •ë³´ ë³µì‚¬
 	fclose(fp);
 	return NOERR;
 }
-int deposit(member* user, unsigned long long money) {//ÀÔ±İ
-	user->balance += money;//ÀÜ¾×À» ¼öÁ¤
+int deposit(member* user, unsigned long long money) {//ì…ê¸ˆ
+	user->balance += money;//ì”ì•¡ì„ ìˆ˜ì •
 	return NOERR;
 }
-int withdraw(member* user, unsigned long long money) {//Ãâ±İ
-	if (user->balance < money) {//Ãâ±İ °¡´É È®ÀÎ
+int withdraw(member* user, unsigned long long money) {//ì¶œê¸ˆ
+	if (user->balance < money) {//ì¶œê¸ˆ ê°€ëŠ¥ í™•ì¸
 		return BALANCE_ERR;
 	}
 	else
 	{
-		user->balance -= money;//ÀÜ¾× ¼öÁ¤
+		user->balance -= money;//ì”ì•¡ ìˆ˜ì •
 		return NOERR;
 	}
 }
-int transfer(member* user, unsigned short dest_id_num, unsigned long long money) {//ÀÌÃ¼
+int transfer(member* user, unsigned short dest_id_num, unsigned long long money,BANK bank) {//ì´ì²´
 
-	if (withdraw(user, money) == BALANCE_ERR)return BALANCE_ERR; //ÀÜ¾×ºÎÁ· È®ÀÎ
+	if (withdraw(user, money) == BALANCE_ERR)return BALANCE_ERR; //ì”ì•¡ë¶€ì¡± í™•ì¸
 
-	char path[20] = { 0 };//°æ·Î ¹®ÀÚ¿­ ÁØºñ
-	member ret;//¹Ş´Â »ç¶÷ º¯¼ö ÁØºñ
-	_ultoa(dest_id_num, path, 10);//ÆÄÀÏÀÌ¸§ Ãß°¡ 
-	strcat(path, ".txt");//È®ÀåÀÚ Ãß°¡
-	FILE *fp;//Æ÷ÀÎÅÍ ¼±¾ğ
-	fp = fopen((const char*)path, "r+");//ÆÄÀÏ ¿­±â
-	fscanf(fp, "%lu %s %llu", &(ret.id.Serial_No), ret.name, &(ret.balance));//Á¤º¸ÀĞ±â
-	ret.balance += money;//ÀÔ±İ
-	fseek(fp, 0, SEEK_SET);//ÀĞ´Â À§Ä¡º¯°æ
-	fprintf(fp, "%lu %s %llu", (ret.id.Serial_No), ret.name, (ret.balance));//ÀúÀå
-	fclose(fp);//ÆÄÀÏ ´İ±â
+	char path[20] = { 0 };//ê²½ë¡œ ë¬¸ìì—´ ì¤€ë¹„
+	member ret;//ë°›ëŠ” ì‚¬ëŒ ë³€ìˆ˜ ì¤€ë¹„
+        strcat(path, (const char)bank);
+	strcat(path, "/");
+	_ultoa(dest_id_num, path, 10);//íŒŒì¼ì´ë¦„ ì¶”ê°€ 
+	strcat(path, ".txt");//í™•ì¥ì ì¶”ê°€
+	FILE *fp;//í¬ì¸í„° ì„ ì–¸
+	fp = fopen((const char*)path, "r+");//íŒŒì¼ ì—´ê¸°
+	fscanf(fp, "%lu %s %llu", &(ret.id.Serial_No), ret.name, &(ret.balance));//ì •ë³´ì½ê¸°
+	ret.balance += money;//ì…ê¸ˆ
+	fseek(fp, 0, SEEK_SET);//ì½ëŠ” ìœ„ì¹˜ë³€ê²½
+	fprintf(fp, "%lu %s %llu", (ret.id.Serial_No), ret.name, (ret.balance));//ì €ì¥
+	fclose(fp);//íŒŒì¼ ë‹«ê¸°
 
 	return NOERR;
 
 }
 int writeData(member user) {
-	char path[20] = { 0 };//°æ·Î ¹®ÀÚ¿­ ÁØºñ
-	_ultoa(user.id.id.id_num, path, 10);//ÆÄÀÏÀÌ¸§ Ãß°¡ 
-	strcat(path, ".txt");//È®ÀåÀÚ Ãß°¡
-	FILE *fp;//Æ÷ÀÎÅÍ ¼±¾ğ
-	fp = fopen((const char*)path, "r+");//ÆÄÀÏ ¿­±â
-	fseek(fp, 0, SEEK_SET);//ÀĞ´Â À§Ä¡º¯°æ
-	fprintf(fp, "%lu %s %llu", (user.id.Serial_No), user.name, (user.balance));//ÀúÀå
-	fclose(fp);//ÆÄÀÏ ´İ±â
+	char path[20] = { 0 };//ê²½ë¡œ ë¬¸ìì—´ ì¤€ë¹„
+        strcat(path, (const char)user.bank);
+	strcat(path, "/");
+	_ultoa(user.id.id.id_num, path, 10);//íŒŒì¼ì´ë¦„ ì¶”ê°€ 
+	strcat(path, ".txt");//í™•ì¥ì ì¶”ê°€
+	FILE *fp;//í¬ì¸í„° ì„ ì–¸
+	fp = fopen((const char*)path, "r+");//íŒŒì¼ ì—´ê¸°
+	fseek(fp, 0, SEEK_SET);//ì½ëŠ” ìœ„ì¹˜ë³€ê²½
+	fprintf(fp, "%lu %s %llu", (user.id.Serial_No), user.name, (user.balance));//ì €ì¥
+	fclose(fp);//íŒŒì¼ ë‹«ê¸°
 	return NOERR;
 }
-void no_err(void) {//¿¡·¯ ¾øÀ½
+void no_err(void) {//ì—ëŸ¬ ì—†ìŒ
 	return;
 }
-void cancel(void) {//Ãë¼Ò 
-	Disp_cancel();//Ãë¼Ò ¸Ş½ÃÁö Ãâ·Â
-	USER.Serial_No = 0;//»ç¿ëÀÚ Á¤º¸ ÃÊ±âÈ­
-	memset((void*)&MEMBER, 0, sizeof(member));//»ç¿ëÀÚ Á¤º¸ ÃÊ±âÈ­
+void cancel(void) {//ì·¨ì†Œ 
+	Disp_cancel();//ì·¨ì†Œ ë©”ì‹œì§€ ì¶œë ¥
+	USER.Serial_No = 0;//ì‚¬ìš©ì ì •ë³´ ì´ˆê¸°í™”
+	memset((void*)&MEMBER, 0, sizeof(member));//ì‚¬ìš©ì ì •ë³´ ì´ˆê¸°í™”
 	return;
 }
-void non_account(void) {//°èÁÂ ¾øÀ½
-	Disp_NO_account();//¿¡·¯ ¸Ş½ÃÁö Ãâ·Â
+void non_account(void) {//ê³„ì¢Œ ì—†ìŒ
+	Disp_NO_account();//ì—ëŸ¬ ë©”ì‹œì§€ ì¶œë ¥
 	//_getch();
-	USER.Serial_No = 0;//»ç¿ëÀÚ Á¤º¸ ÃÊ±âÈ­
-	memset((void*)&MEMBER, 0, sizeof(member));//»ç¿ëÀÚ Á¤º¸ ÃÊ±âÈ­
+	USER.Serial_No = 0;//ì‚¬ìš©ì ì •ë³´ ì´ˆê¸°í™”
+	memset((void*)&MEMBER, 0, sizeof(member));//ì‚¬ìš©ì ì •ë³´ ì´ˆê¸°í™”
 	return;
 }
-void wrong_pw(void) {//Àß¸øµÈ ºñ¹Ğ¹øÈ£
-	Disp_Wrong_PW();//¿¡·¯ ¸Ş½ÃÁö Ãâ·Â
+void wrong_pw(void) {//ì˜ëª»ëœ ë¹„ë°€ë²ˆí˜¸
+	Disp_Wrong_PW();//ì—ëŸ¬ ë©”ì‹œì§€ ì¶œë ¥
 	//_getch();
-	USER.Serial_No = 0;//»ç¿ëÀÚ Á¤º¸ ÃÊ±âÈ­
-	memset((void*)&MEMBER, 0, sizeof(member));//»ç¿ëÀÚ Á¤º¸ ÃÊ±âÈ­
+	USER.Serial_No = 0;//ì‚¬ìš©ì ì •ë³´ ì´ˆê¸°í™”
+	memset((void*)&MEMBER, 0, sizeof(member));//ì‚¬ìš©ì ì •ë³´ ì´ˆê¸°í™”
 	return;
 }
-void insufficient_balance(void)//ÀÜ¾×ºÎÁ·
+void insufficient_balance(void)//ì”ì•¡ë¶€ì¡±
 {
-	Disp_insufficient_balance();//¿¡·¯ ¸Ş½ÃÁö Ãâ·Â
+	Disp_insufficient_balance();//ì—ëŸ¬ ë©”ì‹œì§€ ì¶œë ¥
 	//_getch();
-	USER.Serial_No = 0;//»ç¿ëÀÚ Á¤º¸ ÃÊ±âÈ­
-	memset(&MEMBER, 0, sizeof(member));//»ç¿ëÀÚ Á¤º¸ ÃÊ±âÈ­
+	USER.Serial_No = 0;//ì‚¬ìš©ì ì •ë³´ ì´ˆê¸°í™”
+	memset(&MEMBER, 0, sizeof(member));//ì‚¬ìš©ì ì •ë³´ ì´ˆê¸°í™”
 	return;
 }
