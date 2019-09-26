@@ -13,6 +13,7 @@ typedef union ID_ST
 typedef struct Member
 {
 	union ID_ST id;
-	char name[100];
+	char name[30];
+        char bank;
 	unsigned long long balance;
 }member;
