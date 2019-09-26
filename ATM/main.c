@@ -1,3 +1,5 @@
+﻿#pragma warning(disable:4819)
+
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include<conio.h>
@@ -13,22 +15,21 @@
 #define BALANCE_ERR 3 /*잔액부족*/
 #define CANCEL 4 /*취소*/
 
-#define GABANK "01"
-#define	KWBANK "02"
+
 ////계좌번호가 계좌 파일 이름 
 ////파일 구성 : 계좌번호.txt <계좌번호비번 이름 잔액>
-typedef BANK char;
+
 ID USER;//사용자 계좌 번호, 비밀번호 입력용 변수
 member MEMBER;//계좌 정보 변수
 
-int ckID_num(unsigned short id_num, BANK* bank);//없은 id면 1을 리턴
+int ckID_num(unsigned short id_num, BANK bank);//없은 id면 1을 리턴
 int CK_ID(ID id, member* ret, BANK bank);//성공 0, 계좌 없음 1, 비번오류 2
 int deposit(member* user, unsigned long long money);//성공시 0 
 int withdraw(member* user, unsigned long long money);//성공시 0, 잔액부족 3
-int transfer(member* user, unsigned short dest_id_num, unsigned long long money);//성공시 0, 잔액 부족 3
+int transfer(member* user, unsigned short dest_id_num, unsigned long long money,BANK bank);//성공시 0, 잔액 부족 3
 int writeData(member user);//성공시 0
 int userSet(ID* id, member* user, BANK* bank);//성공시 0
-int bankck(BANK* bank);
+//int bankck(BANK* bank);
 
 void no_err(void);//에러 없음
 void cancel(void);//취소됨
@@ -42,7 +43,7 @@ void(*errFunc[5])(void) = { no_err ,non_account,wrong_pw,insufficient_balance, c
 #if 1
 int MK_ID(ID id, member* ret, BANK bank) {
 	char path[20] = { 0 };
-	if (ckID_num(id.id.id_num) == 0)return CANCEL; //계좌 존재
+	if (ckID_num(id.id.id_num,bank) == 0)return CANCEL; //계좌 존재
 
 	_ultoa(id.id.id_num, path, 10);
 	strcat(path, ".txt");
@@ -64,7 +65,7 @@ void main(void) {
 	int errcode = 0;
 	unsigned short id_num = 0;
 	unsigned long long money = 0;
-        BANK tmpbank;
+    BANK tmpbank,bank;
 	for (;;) {
 		Disp_main();
 		switch (_getch())
@@ -85,7 +86,7 @@ void main(void) {
 			deposit(&MEMBER, money);//입금
 			writeData(MEMBER);//저장
 
-			errcode = CK_ID(USER, &MEMBER,&bank);//정보 불러오기
+			errcode = CK_ID(USER, &MEMBER,bank);//정보 불러오기
 			if (errcode) {
 				errFunc[errcode]();
 				errcode = 0;
@@ -130,7 +131,7 @@ void main(void) {
 				errcode = 0;
 				break;
 			}
-                        if (Disp_Bank_input(&tmpbank))//받는 사람 은행 입력
+            if (Disp_Bank_input(&tmpbank))//받는 사람 은행 입력
 			{
 				errFunc[CANCEL]();
 				break;
@@ -146,7 +147,7 @@ void main(void) {
 				errcode = 0;
 				break;
 			}
-			if (Disp_name_ck(tmp.id.id_num))//받는 사람의 이름 확인
+			if (Disp_name_ck(tmp.id.id_num,tmpbank))//받는 사람의 이름 확인
 			{
 				errFunc[CANCEL]();
 				break;
@@ -172,7 +173,7 @@ void main(void) {
 			}
 			writeData(MEMBER);//저장
 
-			errcode = CK_ID(USER, &MEMBER);//정보 불러오기
+			errcode = CK_ID(USER, &MEMBER,bank);//정보 불러오기
 			if (errcode) {
 				errFunc[errcode]();
 				errcode = 0;
@@ -215,15 +216,16 @@ void main(void) {
 	return;
 }
 int userSet(ID* id, member* user,BANK* bank) {
+	//printf("본인의")
+    if (Disp_Bank_input(bank))//은행 입력
+	{
+		return CANCEL;
+	}
 	if (Disp_ID_input(id))//계좌 입력
 	{
 		return CANCEL;
 	}
 	if (Disp_PW_input(id))//비밀번호 입력
-	{
-		return CANCEL;
-	}
-        if (Disp_Bank_input(bank))//계좌 입력
 	{
 		return CANCEL;
 	}
@@ -234,7 +236,7 @@ int ckID_num(unsigned short id_num, BANK bank) {
 	char fullpath[40] = { 0 };//계좌 경로
 	char id[20] = { 0 };//계좌
 	_ultoa(id_num, id, 10);//파일이름 추가 
-	strcat(fullpath, (const char)bank);
+	strcat(fullpath, (const char*)&bank);//은행별폴더
 	strcat(fullpath, "/");
 	strcat(fullpath, (const char*)id);
 	strcat(fullpath, ".txt");
@@ -244,11 +246,13 @@ int ckID_num(unsigned short id_num, BANK bank) {
 }
 int CK_ID(ID id, member* ret,BANK bank) {
 	char path[20] = { 0 };//계좌 경로
+	char _id[20] = { 0 };//계좌
 	ID curr;
 	if (ckID_num(id.id.id_num, bank) == NOACCOUNT)return NOACCOUNT; //계좌 존재 여부 확인
-        strcat(path, (const char)bank);
+	_ultoa(id.id.id_num, _id, 10);//파일이름 추가 
+    strcat(path, (const char*)&bank);//은행별폴더
 	strcat(path, "/");
-	_ultoa(id.id.id_num, path, 10);//파일이름 추가 
+	strcat(path, (const char*)_id);
 	strcat(path, ".txt");//확장자 추가
 	FILE *fp;//포인터 선언
 	fp = fopen((const char*)path, "r");//파일 읽기
@@ -258,6 +262,7 @@ int CK_ID(ID id, member* ret,BANK bank) {
 
 	fseek(fp, 0, SEEK_SET);//읽는 위치 수정
 	fscanf(fp, "%lu %s %llu", &(ret->id.Serial_No), ret->name, &(ret->balance));//계좌 정보 복사
+	ret->bank = bank;
 	fclose(fp);
 	return NOERR;
 }
@@ -278,12 +283,13 @@ int withdraw(member* user, unsigned long long money) {//출금
 int transfer(member* user, unsigned short dest_id_num, unsigned long long money,BANK bank) {//이체
 
 	if (withdraw(user, money) == BALANCE_ERR)return BALANCE_ERR; //잔액부족 확인
-
 	char path[20] = { 0 };//경로 문자열 준비
+	char _id[20] = { 0 };//계좌
+	_ultoa(dest_id_num, _id, 10);//파일이름 추가 
 	member ret;//받는 사람 변수 준비
-        strcat(path, (const char)bank);
+    strcat(path, (const char*)&bank);//은행별폴더
 	strcat(path, "/");
-	_ultoa(dest_id_num, path, 10);//파일이름 추가 
+	strcat(path, (const char*)_id);
 	strcat(path, ".txt");//확장자 추가
 	FILE *fp;//포인터 선언
 	fp = fopen((const char*)path, "r+");//파일 열기
@@ -298,9 +304,12 @@ int transfer(member* user, unsigned short dest_id_num, unsigned long long money,
 }
 int writeData(member user) {
 	char path[20] = { 0 };//경로 문자열 준비
-        strcat(path, (const char)user.bank);
+	char _id[20] = { 0 };//계좌
+	_ultoa(user.id.id.id_num, _id, 10);
+    strcat(path, (const char*)&(user.bank));//은행별폴더
 	strcat(path, "/");
-	_ultoa(user.id.id.id_num, path, 10);//파일이름 추가 
+	strcat(path, (const char*)_id);
+	//파일이름 추가 
 	strcat(path, ".txt");//확장자 추가
 	FILE *fp;//포인터 선언
 	fp = fopen((const char*)path, "r+");//파일 열기

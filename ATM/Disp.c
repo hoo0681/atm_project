@@ -83,10 +83,14 @@ int Disp_Transfer_ck(member user, unsigned short id_num, unsigned long long mone
 }
 //계좌 이체 확인
 
-int Disp_name_ck(unsigned short id_num) {
+int Disp_name_ck(unsigned short id_num,BANK bank) {
 	char path[20] = { 0 };
 	member ret;
-	_ultoa(id_num, path, 10);
+	char id[20] = { 0 };//계좌
+	_ultoa(id_num, id, 10);//파일이름 추가 
+	strcat(path, (const char*)&bank);
+	strcat(path, "/");
+	strcat(path, (const char*)id);
 	strcat(path, ".txt");
 	FILE *fp;
 	fp = fopen((const char*)path, "r+");
@@ -99,6 +103,38 @@ int Disp_name_ck(unsigned short id_num) {
 
 }
 //계좌 이체시 상대 이름 확인
+int Disp_Bank_input(BANK* bank) {
+	char key = 0;//입력받을 변수
+	int flag = 0;//정상입력플레그
+	printf("은행을 입력하시오.\n");
+	char* banks[] = {"GABANK","KWBANK"};//은행종류
+	for (int i = 0; i < 2; i++) {
+		printf("[%d] %s \n", i + 1, banks[i]);//은행나열
+	}
+	
+	do
+	{
+		key =_getch();
+		switch (key)
+		{
+		case '1'://일번이면 
+			*bank = '1';
+			flag = 1;
+			break;
+		case '2'://2번이면
+			*bank = '2';
+			flag = 2;
+			break;
+		default://그외
+			flag = 0;
+			break;
+		}
+	} while (!flag);
+	printf("%s을 선택하셨습니다.\n", banks[flag - 1]);//선택한 은행출력
+	printf("확인은 아무키나, 취소는 4번을 누르시오\n");
+	if (_getch() == '4')return CANCEL;//취소?
+	else return NOERR;
+}
 void Disp_NO_account(void) {
 	printf("없는 계좌입니다\n 메인화면으로 돌아갑니다.\n");
 }

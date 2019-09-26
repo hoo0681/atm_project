@@ -9,8 +9,8 @@ extern void Disp_LookUp(member user);//user에 있는 정보 전부 출력
 extern int Disp_Transfer_ck(member user, unsigned short id_num, unsigned long long money);//계좌 이체 확인
 extern void Disp_cancel(void);//취소
 extern void Disp_Wrong_input(void);//잘못된 값입력시
-extern int Disp_name_ck(unsigned short id_num);//계좌 이체시 상대 이름 확인
+extern int Disp_name_ck(unsigned short id_num,BANK bank);//계좌 이체시 상대 이름 확인
 extern void Disp_NO_account(void);//계좌가 없는 경우
 extern void Disp_Wrong_PW(void);//잘못된 비밀번호
 extern void Disp_insufficient_balance(void);//잔액부족
-
+extern int Disp_Bank_input(BANK* bank);
