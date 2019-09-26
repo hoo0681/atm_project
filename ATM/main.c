@@ -210,7 +210,8 @@ void main(void) {
 			Disp_Wrong_input();
 			break;
 		}
-
+		tmpbank = 0;
+		bank = 0;
 
 	}
 	return;
